@@ -431,7 +431,11 @@ export class HiveCommunicationProtocol extends EventEmitter {
    * Export communication log
    */
   exportLog(): any {
-    const log = {
+    const log: {
+      channels: { id: string; name: string; type: string; memberCount: number; messageCount: number }[];
+      messages: HiveMessage[];
+      knowledge: { key: string; [key: string]: any }[];
+    } = {
       channels: Array.from(this.channels.values()).map((channel) => ({
         id: channel.id,
         name: channel.name,

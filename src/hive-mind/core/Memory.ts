@@ -113,6 +113,26 @@ class HighPerformanceCache<T> {
     }
     return false;
   }
+
+  get size(): number {
+    return this.cache.size;
+  }
+
+  entries(): IterableIterator<[string, { data: T; timestamp: number; size: number }]> {
+    return this.cache.entries();
+  }
+
+  keys(): IterableIterator<string> {
+    return this.cache.keys();
+  }
+
+  values(): IterableIterator<{ data: T; timestamp: number; size: number }> {
+    return this.cache.values();
+  }
+
+  [Symbol.iterator](): IterableIterator<[string, { data: T; timestamp: number; size: number }]> {
+    return this.cache.entries();
+  }
 }
 
 /**
@@ -160,8 +180,8 @@ class ObjectPool<T> {
 
 export class Memory extends EventEmitter {
   private swarmId: string;
-  private db: DatabaseManager;
-  private mcpWrapper: MCPToolWrapper;
+  private db!: DatabaseManager;
+  private mcpWrapper!: MCPToolWrapper;
   private cache: HighPerformanceCache<any>;
   private namespaces: Map<string, MemoryNamespace>;
   private accessPatterns: Map<string, number>;

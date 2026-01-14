@@ -14,6 +14,7 @@ import {
   SwarmTopology,
   Task,
   AgentType,
+  AgentCapability,
   QueenMode,
   ConsensusProposal,
   QueenDecision,
@@ -32,8 +33,8 @@ export class Queen extends EventEmitter {
   private agents: Map<string, Agent>;
   private taskQueue: Map<string, Task>;
   private strategies: Map<string, CoordinationStrategy>;
-  private db: DatabaseManager;
-  private mcpWrapper: MCPToolWrapper;
+  private db!: DatabaseManager;
+  private mcpWrapper!: MCPToolWrapper;
   private isActive: boolean = false;
 
   constructor(config: QueenConfig) {
@@ -225,8 +226,8 @@ export class Queen extends EventEmitter {
     let score = 0;
 
     // Capability match
-    const capabilityMatches = requiredCapabilities.filter((cap) =>
-      agent.capabilities.includes(cap),
+    const capabilityMatches = requiredCapabilities.filter((cap: string) =>
+      agent.capabilities.includes(cap as AgentCapability),
     ).length;
     score += capabilityMatches * 10;
 

@@ -251,7 +251,56 @@ export type TaskType =
   | 'security-testing'
   | 'api-testing'
   | 'test-automation'
-  | 'test-analysis';
+  | 'test-analysis'
+  // SpecKit Integration Agent Tasks
+  // Constitutional Enforcer
+  | 'read-constitution'
+  | 'validate-plan'
+  | 'check-gate'
+  | 'record-exception'
+  | 'audit-violations'
+  // Specification Optimizer
+  | 'analyze-metrics'
+  | 'propose-updates'
+  | 'trigger-regeneration'
+  | 'forecast-metrics'
+  | 'detect-drift'
+  // Artifact Validator
+  | 'validate-spec'
+  | 'check-coverage'
+  | 'identify-gaps'
+  | 'analyze-consistency'
+  | 'trace-requirements'
+  // Task Orchestrator Agent
+  | 'parse-tasks'
+  | 'build-graph'
+  | 'assign-agents'
+  | 'track-progress'
+  // Research Coordinator
+  | 'extract-unknowns'
+  | 'spawn-research'
+  | 'consolidate-findings'
+  | 'generate-document'
+  | 'track-research'
+  // Clarification Expert
+  | 'generate-questions'
+  | 'record-answers'
+  | 'validate-completeness'
+  | 'analyze-coverage'
+  | 'manage-session'
+  // Contract Validator
+  | 'parse-contracts'
+  | 'generate-tests'
+  | 'validate-models'
+  | 'check-completeness'
+  | 'analyze-breaking-changes'
+  // NFR Specialist
+  | 'extract-nfrs'
+  | 'create-tests'
+  | 'assess-risks'
+  // Additional Task Orchestrator Agent
+  | 'optimize-schedule'
+  | 'handle-failure';
 
 export type TaskStatus =
   | 'created' // Task has been created
@@ -320,6 +369,9 @@ export interface TaskConstraints {
 }
 
 export interface TaskResult {
+  // Task identification
+  taskId?: string;
+
   // Result data
   output: any;
   artifacts: Record<string, any>;
@@ -382,6 +434,10 @@ export interface TaskDefinition {
   // History
   attempts: TaskAttempt[];
   statusHistory: TaskStatusChange[];
+
+  // Optional metadata
+  metadata?: Record<string, any>;
+  objective?: string;
 }
 
 export interface TaskAttempt {
@@ -674,7 +730,13 @@ export type LoadBalancingStrategy =
   | 'centralized' // Central dispatcher
   | 'distributed' // Distributed load balancing
   | 'predictive' // Predict and prevent overload
-  | 'reactive'; // React to overload conditions
+  | 'reactive' // React to overload conditions
+  | 'hybrid' // Combined strategy
+  | 'load-based' // Based on agent load metrics
+  | 'performance-based' // Based on agent performance
+  | 'capability-based' // Based on agent capabilities
+  | 'affinity-based' // Based on task affinity
+  | 'cost-based'; // Based on cost optimization
 
 export type FaultToleranceStrategy =
   | 'retry' // Retry failed tasks
@@ -950,6 +1012,15 @@ export type EventType =
   | 'system.shutdown'
   | 'system.resource_limit'
   | 'system.performance_degradation'
+
+  // Objective events
+  | 'objective.created'
+  | 'objective.started'
+  | 'objective.completed'
+  | 'objective.failed'
+
+  // Queue events
+  | 'task.queued'
 
   // Custom events
   | 'custom.user_defined';

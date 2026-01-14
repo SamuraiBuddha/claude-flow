@@ -3,6 +3,17 @@
  * Export all MCP components for easy integration
  */
 
+// Local imports for use within this module
+import { MCPServer as MCPServerImpl } from './server.js';
+import { MCPLifecycleManager as MCPLifecycleManagerImpl } from './lifecycle-manager.js';
+import { MCPPerformanceMonitor as MCPPerformanceMonitorImpl } from './performance-monitor.js';
+import { MCPProtocolManager as MCPProtocolManagerImpl } from './protocol-manager.js';
+import {
+  MCPOrchestrationIntegration as MCPOrchestrationIntegrationImpl,
+  type OrchestrationComponents as OrchestrationComponentsType,
+  type MCPOrchestrationConfig as MCPOrchestrationConfigType,
+} from './orchestration-integration.js';
+
 // Core MCP Server
 export { MCPServer, type IMCPServer } from './server.js';
 
@@ -35,11 +46,7 @@ export {
 export {
   AuthManager,
   type IAuthManager,
-  type AuthContext,
   type AuthResult,
-  type TokenInfo,
-  type TokenGenerationOptions,
-  type AuthSession,
   Permissions,
 } from './auth.js';
 
@@ -89,13 +96,13 @@ export class MCPIntegrationFactory {
    */
   static async createIntegration(config: {
     mcpConfig: import('../utils/types.js').MCPConfig;
-    orchestrationConfig?: Partial<MCPOrchestrationConfig>;
-    components?: Partial<OrchestrationComponents>;
+    orchestrationConfig?: Partial<MCPOrchestrationConfigType>;
+    components?: Partial<OrchestrationComponentsType>;
     logger: import('../core/logger.js').ILogger;
-  }): Promise<MCPOrchestrationIntegration> {
+  }): Promise<MCPOrchestrationIntegrationImpl> {
     const { mcpConfig, orchestrationConfig = {}, components = {}, logger } = config;
 
-    const integration = new MCPOrchestrationIntegration(
+    const integration = new MCPOrchestrationIntegrationImpl(
       mcpConfig,
       {
         enabledIntegrations: {
@@ -131,9 +138,9 @@ export class MCPIntegrationFactory {
     enableLifecycleManagement?: boolean;
     enablePerformanceMonitoring?: boolean;
   }): Promise<{
-    server: MCPServer;
-    lifecycleManager?: MCPLifecycleManager;
-    performanceMonitor?: MCPPerformanceMonitor;
+    server: MCPServerImpl;
+    lifecycleManager?: MCPLifecycleManagerImpl;
+    performanceMonitor?: MCPPerformanceMonitorImpl;
   }> {
     const {
       mcpConfig,
@@ -143,17 +150,17 @@ export class MCPIntegrationFactory {
     } = config;
 
     const eventBus = new (await import('node:events')).EventEmitter();
-    const server = new MCPServer(mcpConfig, eventBus, logger);
+    const server = new MCPServerImpl(mcpConfig, eventBus, logger);
 
-    let lifecycleManager: MCPLifecycleManager | undefined;
-    let performanceMonitor: MCPPerformanceMonitor | undefined;
+    let lifecycleManager: MCPLifecycleManagerImpl | undefined;
+    let performanceMonitor: MCPPerformanceMonitorImpl | undefined;
 
     if (enableLifecycleManagement) {
-      lifecycleManager = new MCPLifecycleManager(mcpConfig, logger, () => server);
+      lifecycleManager = new MCPLifecycleManagerImpl(mcpConfig, logger, () => server);
     }
 
     if (enablePerformanceMonitoring) {
-      performanceMonitor = new MCPPerformanceMonitor(logger);
+      performanceMonitor = new MCPPerformanceMonitorImpl(logger);
     }
 
     return {
@@ -167,10 +174,10 @@ export class MCPIntegrationFactory {
    * Create a development/testing MCP setup
    */
   static async createDevelopmentSetup(logger: import('../core/logger.js').ILogger): Promise<{
-    server: MCPServer;
-    lifecycleManager: MCPLifecycleManager;
-    performanceMonitor: MCPPerformanceMonitor;
-    protocolManager: MCPProtocolManager;
+    server: MCPServerImpl;
+    lifecycleManager: MCPLifecycleManagerImpl;
+    performanceMonitor: MCPPerformanceMonitorImpl;
+    protocolManager: MCPProtocolManagerImpl;
   }> {
     const mcpConfig: import('../utils/types.js').MCPConfig = {
       transport: 'stdio',
@@ -188,7 +195,7 @@ export class MCPIntegrationFactory {
       enablePerformanceMonitoring: true,
     });
 
-    const protocolManager = new MCPProtocolManager(logger);
+    const protocolManager = new MCPProtocolManagerImpl(logger);
 
     return {
       server,

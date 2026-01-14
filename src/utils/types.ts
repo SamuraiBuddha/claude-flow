@@ -4,6 +4,7 @@
 
 // Logging configuration interface
 export interface LoggingConfig {
+  name?: string;
   level: 'debug' | 'info' | 'warn' | 'error';
   format: 'text' | 'json';
   destination: 'console' | 'file' | 'both';
@@ -12,6 +13,10 @@ export interface LoggingConfig {
     maxSize: number;
     maxFiles: number;
   };
+  // Flat file config (alternative to file object)
+  filePath?: string;
+  maxFileSize?: number;
+  maxFiles?: number;
   enableTimestamps?: boolean;
   enableContext?: boolean;
 }
@@ -97,13 +102,14 @@ export type TaskStatus =
 export interface MemoryEntry {
   id: string;
   agentId: string;
-  sessionId: string;
-  type: 'observation' | 'insight' | 'decision' | 'artifact' | 'error';
+  sessionId?: string;
+  namespace?: string;
+  type: 'observation' | 'insight' | 'decision' | 'artifact' | 'error' | 'objective' | 'task-result' | 'swarm-state' | 'aggregated-result' | 'result-report';
   content: string;
-  context: Record<string, unknown>;
+  context?: Record<string, unknown>;
   timestamp: Date;
-  tags: string[];
-  version: number;
+  tags?: string[];
+  version?: number;
   parentId?: string;
   metadata?: Record<string, unknown>;
 }
@@ -229,11 +235,15 @@ export interface TerminalConfig {
 export interface MemoryConfig {
   backend: 'sqlite' | 'markdown' | 'hybrid';
   cacheSizeMB: number;
-  syncInterval: number;
-  conflictResolution: 'last-write' | 'crdt' | 'manual';
-  retentionDays: number;
+  syncInterval?: number;
+  conflictResolution?: 'last-write' | 'crdt' | 'manual';
+  retentionDays?: number;
   sqlitePath?: string;
   markdownDir?: string;
+  namespace?: string;
+  syncOnExit?: boolean;
+  maxEntries?: number;
+  ttlMinutes?: number;
 }
 
 export interface CoordinationConfig {
@@ -259,7 +269,10 @@ export interface MCPConfig {
   corsOrigins?: string[];
 }
 
-export interface LoggingConfig {
+// Note: This is a duplicate interface - consolidate with the first LoggingConfig
+// Keeping for backwards compatibility
+export interface LoggingConfigLegacy {
+  name?: string;
   level: 'debug' | 'info' | 'warn' | 'error';
   format: 'json' | 'text';
   destination: 'console' | 'file' | 'both';

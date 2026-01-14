@@ -30,7 +30,7 @@ export class DatabaseManager extends EventEmitter {
   private static instance: DatabaseManager;
   private db: any; // Database instance or in-memory fallback
   private statements: Map<string, any>;
-  private dbPath: string;
+  private dbPath!: string;
   private isInMemory: boolean = false;
   private memoryStore: any = null;
 
@@ -676,6 +676,34 @@ For persistent storage options, see: https://github.com/ruvnet/claude-code-flow/
 
   // Consensus operations
 
+  async getConsensusProposal(id: string): Promise<any> {
+    const row = this.db.prepare('SELECT * FROM consensus WHERE id = ?').get(id);
+    if (!row) return null;
+    return {
+      ...row,
+      proposal: JSON.parse(row.proposal || '{}'),
+      votes: JSON.parse(row.votes || '{}'),
+    };
+  }
+
+  async updateConsensusStatus(id: string, status: string): Promise<void> {
+    this.db.prepare('UPDATE consensus SET status = ? WHERE id = ?').run(status, id);
+  }
+
+  async getRecentConsensusProposals(swarmId: string, limit: number = 10): Promise<any[]> {
+    const rows = this.db.prepare(`
+      SELECT * FROM consensus
+      WHERE swarm_id = ?
+      ORDER BY created_at DESC
+      LIMIT ?
+    `).all(swarmId, limit);
+    return rows.map((row: any) => ({
+      ...row,
+      proposal: JSON.parse(row.proposal || '{}'),
+      votes: JSON.parse(row.votes || '{}'),
+    }));
+  }
+
   async createConsensusProposal(proposal: any): Promise<void> {
     this.db
       .prepare(
@@ -854,6 +882,33 @@ For persistent storage options, see: https://github.com/ruvnet/claude-code-flow/
   private recordPerformance(operation: string, duration: number): void {
     // Simple performance tracking - could be expanded
     console.debug(`DB Operation ${operation}: ${duration.toFixed(2)}ms`);
+  }
+
+  /**
+   * Check database health
+   */
+  async healthCheck(): Promise<{ healthy: boolean; details: Record<string, any> }> {
+    try {
+      // Simple health check - verify database is accessible
+      const result = this.db.prepare('SELECT 1 as check').get();
+      return {
+        healthy: !!result,
+        details: {
+          connected: true,
+          path: this.dbPath,
+          timestamp: new Date().toISOString(),
+        },
+      };
+    } catch (error) {
+      return {
+        healthy: false,
+        details: {
+          connected: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: new Date().toISOString(),
+        },
+      };
+    }
   }
 
   /**

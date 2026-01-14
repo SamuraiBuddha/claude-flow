@@ -22,6 +22,13 @@ import {
   EventType,
   SWARM_CONSTANTS,
 } from './types.js';
+import {
+  TaskExecutor,
+  ExecutionConfig,
+  ExecutionResult,
+  ExecutionContext,
+  ClaudeExecutionOptions,
+} from './executor.js';
 
 export interface ClaudeExecutionOptionsV2 extends ClaudeExecutionOptions {
   nonInteractive?: boolean;
@@ -45,7 +52,7 @@ export class TaskExecutorV2 extends TaskExecutor {
     });
   }
 
-  async executeClaudeTask(
+  override async executeClaudeTask(
     task: TaskDefinition,
     agent: AgentState,
     claudeOptions: ClaudeExecutionOptionsV2 = {},

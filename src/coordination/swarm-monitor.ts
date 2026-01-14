@@ -382,7 +382,9 @@ export class SwarmMonitor extends EventEmitter {
 
     this.alerts.push(alert);
     this.emit('alert', alert);
-    this.logger[level](message);
+    // Map alert levels to logger methods (critical -> error)
+    const logLevel = level === 'critical' ? 'error' : level === 'warning' ? 'warn' : level;
+    this.logger[logLevel as 'info' | 'warn' | 'error'](message);
   }
 
   private cleanOldMetrics(): void {

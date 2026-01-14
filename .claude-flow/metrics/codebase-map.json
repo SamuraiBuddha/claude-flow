@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-01-14T22:45:22.744Z",
+  "projectRoot": "/home/samuraibuddha/Documents/GitHub/claude-flow",
+  "structure": {
+    "hasPackageJson": true,
+    "hasTsConfig": true,
+    "hasClaudeConfig": true,
+    "hasClaudeFlow": true
+  },
+  "scannedAt": 1768430722744
+}

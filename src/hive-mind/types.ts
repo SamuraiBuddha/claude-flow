@@ -152,7 +152,9 @@ export type MessageType =
   | 'task_assignment'
   | 'progress_update'
   | 'coordination'
-  | 'channel';
+  | 'channel'
+  | 'task_failed'
+  | 'task_completed';
 
 export type MessagePriority = 'low' | 'normal' | 'high' | 'urgent';
 

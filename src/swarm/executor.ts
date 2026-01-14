@@ -69,8 +69,8 @@ export interface ExecutionConfig {
 }
 
 export class TaskExecutor extends EventEmitter {
-  private logger: Logger;
-  private config: ExecutionConfig;
+  protected logger: Logger;
+  protected config: ExecutionConfig;
   private activeExecutions: Map<string, ExecutionSession> = new Map();
   private resourceMonitor: ResourceMonitor;
   private processPool: ProcessPool;
@@ -491,7 +491,7 @@ export class TaskExecutor extends EventEmitter {
     };
   }
 
-  private buildClaudePrompt(task: TaskDefinition, agent: AgentState): string {
+  protected buildClaudePrompt(task: TaskDefinition, agent: AgentState): string {
     const sections: string[] = [];
 
     // Agent identification
@@ -602,7 +602,7 @@ export class TaskExecutor extends EventEmitter {
     return sections.join('\n');
   }
 
-  private async createExecutionContext(
+  protected async createExecutionContext(
     task: TaskDefinition,
     agent: AgentState,
   ): Promise<ExecutionContext> {
@@ -652,11 +652,11 @@ export class TaskExecutor extends EventEmitter {
     }
   }
 
-  private async collectResourceUsage(sessionId: string): Promise<ResourceUsage> {
+  protected async collectResourceUsage(sessionId: string): Promise<ResourceUsage> {
     return this.resourceMonitor.getUsage(sessionId);
   }
 
-  private async collectArtifacts(context: ExecutionContext): Promise<Record<string, any>> {
+  protected async collectArtifacts(context: ExecutionContext): Promise<Record<string, any>> {
     const artifacts: Record<string, any> = {};
 
     try {

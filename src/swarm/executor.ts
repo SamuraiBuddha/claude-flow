@@ -62,7 +62,7 @@ export interface ExecutionConfig {
   killTimeout: number;
   resourceLimits: ExecutionResources;
   sandboxed: boolean;
-  logLevel: string;
+  logLevel: 'debug' | 'info' | 'warn' | 'error';
   captureOutput: boolean;
   streamOutput: boolean;
   enableMetrics: boolean;
@@ -155,7 +155,7 @@ export class TaskExecutor extends EventEmitter {
       this.logger.error('Task execution failed', {
         sessionId,
         error: error instanceof Error ? error.message : String(error),
-        stack: error.stack,
+        stack: error instanceof Error ? error.stack : undefined,
       });
 
       await this.cleanupExecution(session);

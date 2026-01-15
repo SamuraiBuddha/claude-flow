@@ -684,9 +684,9 @@ export class HiveMindIntegration extends EventEmitter {
 
   private async loadKnowledgeBase(): Promise<void> {
     try {
-      const knowledgeEntries = await this.memoryManager.retrieve({
+      const knowledgeEntries = await this.memoryManager.query({
         namespace: 'hive-mind-knowledge',
-        type: 'knowledge-base',
+        type: 'artifact',
       });
 
       for (const entry of knowledgeEntries) {
@@ -709,14 +709,16 @@ export class HiveMindIntegration extends EventEmitter {
 
   private async loadCollectiveIntelligence(): Promise<void> {
     try {
-      const intelligenceEntries = await this.memoryManager.retrieve({
+      const intelligenceEntries = await this.memoryManager.query({
         namespace: 'hive-mind-intelligence',
-        type: 'collective-intelligence',
+        type: 'artifact',
       });
 
-      for (const entry of intelligenceEntries) {
-        const data = JSON.parse(entry.content);
-        this.loadIntelligenceData(data);
+      if (intelligenceEntries && intelligenceEntries.length > 0) {
+        for (const entry of intelligenceEntries) {
+          const data = JSON.parse(entry.content);
+          this.loadIntelligenceData(data);
+        }
       }
 
       this.logger.debug('Collective intelligence loaded', {
@@ -743,7 +745,7 @@ export class HiveMindIntegration extends EventEmitter {
       await this.memoryManager.store({
         id: `knowledge-base-${Date.now()}`,
         agentId: 'hive-mind-integration',
-        type: 'knowledge-base',
+        type: 'artifact' as const,
         content: JSON.stringify(knowledgeData),
         namespace: 'hive-mind-knowledge',
         timestamp: new Date(),
@@ -770,13 +772,13 @@ export class HiveMindIntegration extends EventEmitter {
       await this.memoryManager.store({
         id: `collective-intelligence-${Date.now()}`,
         agentId: 'hive-mind-integration',
-        type: 'collective-intelligence',
+        type: 'artifact' as const,
         content: JSON.stringify(intelligenceData),
         namespace: 'hive-mind-intelligence',
         timestamp: new Date(),
         metadata: {
           type: 'intelligence-snapshot',
-          itemCount: this.globalIntelligence.patterns.size + 
+          itemCount: this.globalIntelligence.patterns.size +
                      this.globalIntelligence.insights.size +
                      this.globalIntelligence.decisions.size +
                      this.globalIntelligence.predictions.size,
@@ -976,7 +978,7 @@ export class HiveMindIntegration extends EventEmitter {
         matches = false;
       }
       
-      if (query.keywords && !query.keywords.some(keyword => 
+      if (query.keywords && !query.keywords.some((keyword: string) =>
         fact.statement.toLowerCase().includes(keyword.toLowerCase()))) {
         matches = false;
       }

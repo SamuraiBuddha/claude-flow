@@ -242,7 +242,7 @@ export class MemoryManager implements IMemoryManager {
         results = results.filter(
           (entry) =>
             entry.content.toLowerCase().includes(query.search!.toLowerCase()) ||
-            entry.tags.some((tag) => tag.toLowerCase().includes(query.search!.toLowerCase())),
+            (entry.tags && entry.tags.some((tag) => tag.toLowerCase().includes(query.search!.toLowerCase()))),
         );
       }
 
@@ -287,7 +287,7 @@ export class MemoryManager implements IMemoryManager {
       ...existing,
       ...updates,
       id: existing.id, // Ensure ID doesn't change
-      version: existing.version + 1,
+      version: (existing.version ?? 0) + 1,
       timestamp: new Date(),
     };
 
@@ -365,9 +365,10 @@ export class MemoryManager implements IMemoryManager {
 
     try {
       // Clean up old entries based on retention policy
-      if (this.config.retentionDays > 0) {
+      const retentionDays = this.config.retentionDays ?? 0;
+      if (retentionDays > 0) {
         const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - this.config.retentionDays);
+        cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
 
         const oldEntries = await this.query({
           endTime: cutoffDate,
@@ -426,7 +427,7 @@ export class MemoryManager implements IMemoryManager {
       } catch (error) {
         this.logger.error('Cache sync error', error);
       }
-    }, this.config.syncInterval);
+    }, this.config.syncInterval) as unknown as number;
   }
 
   private async syncCache(): Promise<void> {

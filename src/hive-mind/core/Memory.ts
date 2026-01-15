@@ -290,10 +290,10 @@ export class Memory extends EventEmitter {
     this.objectPools.set(
       'searchResult',
       new ObjectPool(
-        () => ({ results: [], metadata: {} }),
+        () => ({ results: [] as any[], metadata: {} as Record<string, any> }),
         (obj) => {
           obj.results.length = 0;
-          Object.keys(obj.metadata).forEach((k) => delete obj.metadata[k]);
+          Object.keys(obj.metadata).forEach((k) => delete (obj.metadata as Record<string, any>)[k]);
         },
       ),
     );
@@ -1286,15 +1286,23 @@ export class Memory extends EventEmitter {
     const now = Date.now();
     const toEvict: string[] = [];
 
-    for (const [cacheKey, entry] of this.cache) {
-      if (entry.ttl && entry.createdAt.getTime() + entry.ttl * 1000 < now) {
+    for (const [cacheKey, cacheEntry] of this.cache) {
+      const data = cacheEntry.data as MemoryEntry | undefined;
+      if (data && data.ttl && data.createdAt && data.createdAt.getTime() + data.ttl * 1000 < now) {
         toEvict.push(cacheKey);
       }
     }
 
     for (const key of toEvict) {
-      const entry = this.cache.get(key)!;
-      await this.delete(entry.key, entry.namespace);
+      const cacheEntry = this.cache.get(key);
+      if (cacheEntry) {
+        const data = cacheEntry.data as MemoryEntry;
+        if (data && data.key && data.namespace) {
+          await this.delete(data.key, data.namespace);
+        } else {
+          this.cache.delete(key);
+        }
+      }
     }
   }
 
@@ -1302,9 +1310,9 @@ export class Memory extends EventEmitter {
     const maxCacheSize = 1000;
 
     if (this.cache.size > maxCacheSize) {
-      // Evict least recently used entries
+      // Evict least recently used entries (using cache timestamp)
       const entries = Array.from(this.cache.entries()).sort(
-        (a, b) => a[1].lastAccessedAt.getTime() - b[1].lastAccessedAt.getTime(),
+        (a, b) => a[1].timestamp - b[1].timestamp,
       );
 
       const toEvict = entries.slice(0, entries.length - maxCacheSize);

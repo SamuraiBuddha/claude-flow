@@ -208,6 +208,26 @@ export interface Config {
   logging: LoggingConfig;
   credentials?: CredentialsConfig;
   security?: SecurityConfig;
+  claude?: ClaudeConfig;
+}
+
+export interface ClaudeConfig {
+  apiKey?: string;
+  model?:
+    | 'claude-3-opus-20240229'
+    | 'claude-3-sonnet-20240229'
+    | 'claude-3-haiku-20240307'
+    | 'claude-2.1'
+    | 'claude-2.0'
+    | 'claude-instant-1.2';
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
+  topK?: number;
+  systemPrompt?: string;
+  timeout?: number;
+  retryAttempts?: number;
+  retryDelay?: number;
 }
 
 export interface OrchestratorConfig {

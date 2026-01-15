@@ -591,14 +591,15 @@ export class MCPServer implements IMCPServer {
         // Wrap the handler to inject ruv-swarm context
         const originalHandler = tool.handler;
         tool.handler = async (input: unknown, context?: MCPContext) => {
-          const ruvSwarmContext: RuvSwarmToolContext = {
-            ...context,
+          const ruvSwarmContext = {
+            sessionId: context?.sessionId || `mcp-session-${Date.now()}`,
+            logger: context?.logger || this.logger,
+            agentId: context?.agentId,
             workingDirectory,
-            sessionId: `mcp-session-${Date.now()}`,
             swarmId: process.env.CLAUDE_SWARM_ID || `mcp-swarm-${Date.now()}`,
-          };
+          } as RuvSwarmToolContext;
 
-          return await originalHandler(input, ruvSwarmContext);
+          return await originalHandler(input, ruvSwarmContext as MCPContext);
         };
 
         this.registerTool(tool);
@@ -613,7 +614,7 @@ export class MCPServer implements IMCPServer {
     }
   }
 
-  private errorToMCPError(error): MCPError {
+  private errorToMCPError(error: unknown): MCPError {
     if (error instanceof MCPMethodNotFoundError) {
       return {
         code: -32601,
@@ -643,4 +644,33 @@ export class MCPServer implements IMCPServer {
       data: error,
     };
   }
+}
+
+/**
+ * Helper function to run the MCP server with default configuration
+ */
+export async function runMCPServer(): Promise<void> {
+  // Create minimal dependencies for standalone operation
+  const { Logger } = await import('../core/logger.js');
+  const { EventBus } = await import('../core/event-bus.js');
+
+  const logger = new Logger({ level: 'info', format: 'text', destination: 'console' }, { component: 'MCP' });
+  const eventBus = EventBus.getInstance();
+
+  const config: MCPConfig = {
+    transport: 'stdio',
+    port: 3000,
+    host: 'localhost',
+    tlsEnabled: false,
+    enableMetrics: true,
+    auth: {
+      enabled: false,
+      method: 'token',
+    },
+    sessionTimeout: 3600000,
+    maxSessions: 100,
+  };
+
+  const server = new MCPServer(config, eventBus, logger);
+  await server.start();
 }

@@ -43,17 +43,21 @@ export interface AdvancedSwarmConfig extends SwarmConfig {
   loadBalancing: boolean;
   faultTolerance: boolean;
   realTimeMonitoring: boolean;
-  
+
+  // Task settings
+  maxConcurrentTasks: number;
+  maxRetries: number;
+
   // Performance settings
   maxThroughput: number;
   latencyTarget: number;
   reliabilityTarget: number;
-  
+
   // Integration settings
   mcpIntegration: boolean;
   hiveIntegration: boolean;
   claudeCodeIntegration: boolean;
-  
+
   // Neural capabilities
   neuralProcessing: boolean;
   learningEnabled: boolean;
@@ -255,13 +259,17 @@ export class AdvancedSwarmOrchestrator extends EventEmitter {
       objective: swarmObjective,
       agents: new Map(),
       tasks: new Map(),
-      scheduler: new AdvancedTaskScheduler({
-        maxConcurrency: this.config.maxConcurrentTasks,
-        enablePrioritization: true,
-        enableLoadBalancing: this.config.loadBalancing,
-        enableWorkStealing: true,
-        schedulingAlgorithm: 'adaptive',
-      }),
+      scheduler: new AdvancedTaskScheduler(
+        {
+          maxConcurrency: this.config.maxConcurrentTasks,
+          taskTimeout: this.config.taskTimeoutMinutes! * 60 * 1000,
+          retryAttempts: this.config.maxRetries,
+          retryDelay: 1000,
+          priorityLevels: 5,
+        } as any,
+        this.coordinator as any,
+        this.logger as any,
+      ),
       monitor: new SwarmMonitor({
         updateInterval: 1000,
         enableAlerts: true,
@@ -292,12 +300,12 @@ export class AdvancedSwarmOrchestrator extends EventEmitter {
     await this.memoryManager.store({
       id: `swarm:${swarmId}`,
       agentId: 'orchestrator',
-      type: 'swarm-definition',
+      type: 'swarm-state',
       content: JSON.stringify(swarmObjective),
       namespace: 'swarm-orchestrator',
       timestamp: new Date(),
       metadata: {
-        type: 'swarm-definition',
+        entryType: 'swarm-definition',
         strategy,
         status: 'created',
         agentCount: 0,
@@ -342,7 +350,7 @@ export class AdvancedSwarmOrchestrator extends EventEmitter {
 
       // Store tasks in context
       tasks.forEach(task => {
-        context.tasks.set(task.id.id, task as SwarmTask);
+        context.tasks.set(task.id.id, task as unknown as SwarmTask);
       });
 
       // Spawn required agents
@@ -500,11 +508,11 @@ export class AdvancedSwarmOrchestrator extends EventEmitter {
         await this.memoryManager.store({
           id: 'health-check',
           agentId: 'orchestrator',
-          type: 'health-check',
+          type: 'observation',
           content: 'Health check test',
           namespace: 'health',
           timestamp: new Date(),
-          metadata: { test: true },
+          metadata: { entryType: 'health-check', test: true },
         });
       } catch (error) {
         issues.push('Memory manager health check failed');
@@ -601,12 +609,12 @@ export class AdvancedSwarmOrchestrator extends EventEmitter {
       await this.memoryManager.store({
         id: `task:${task.id.id}`,
         agentId: 'orchestrator',
-        type: 'task-definition',
+        type: 'objective',
         content: JSON.stringify(task),
         namespace: `swarm:${objective.id}`,
         timestamp: new Date(),
         metadata: {
-          type: 'task-definition',
+          entryType: 'task-definition',
           taskType: task.type,
           priority: task.priority,
           status: task.status,
@@ -678,7 +686,7 @@ export class AdvancedSwarmOrchestrator extends EventEmitter {
       };
 
       // Register with coordinator
-      await this.coordinator.registerAgent(agent.name, agent.type, agent.capabilities);
+      await this.coordinator.registerAgent(agent.name, agent.type as any, { tools: agent.capabilities } as any);
 
       agents.push(agent);
 
@@ -694,9 +702,9 @@ export class AdvancedSwarmOrchestrator extends EventEmitter {
   }
 
   private async scheduleAndExecuteTasks(context: SwarmExecutionContext): Promise<void> {
-    // Schedule all tasks
+    // Schedule all tasks using assignTask method
     for (const task of context.tasks.values()) {
-      await context.scheduler.scheduleTask(task as any);
+      await context.scheduler.assignTask(task as any);
     }
 
     // Start execution monitoring
@@ -836,12 +844,12 @@ export class AdvancedSwarmOrchestrator extends EventEmitter {
     await this.memoryManager.store({
       id: `results:${context.swarmId.id}`,
       agentId: 'orchestrator',
-      type: 'swarm-results',
+      type: 'result-report',
       content: JSON.stringify(context.objective.results),
       namespace: `swarm:${context.swarmId.id}`,
       timestamp: new Date(),
       metadata: {
-        type: 'swarm-results',
+        entryType: 'swarm-results',
         status: context.objective.status,
         duration: context.endTime ? context.endTime.getTime() - context.startTime.getTime() : 0,
         taskCount: context.tasks.size,
@@ -1141,6 +1149,7 @@ export class AdvancedSwarmOrchestrator extends EventEmitter {
         connectionPooling: true,
         memoryPooling: false,
       },
+      maxConcurrentTasks: 10,
       maxRetries: 3,
       autoScaling: true,
       loadBalancing: true,

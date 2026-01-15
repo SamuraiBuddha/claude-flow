@@ -14,6 +14,19 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { SparcMode, loadSparcModes } from './sparc-modes.js';
+
+// executeSparcMode function for executing SPARC modes
+// TODO: Implement proper SPARC mode execution or integrate with external execution engine
+async function executeSparcMode(
+  mode: string,
+  task: string,
+  tools: string[],
+  context: Record<string, any>,
+): Promise<{ output: string }> {
+  // Placeholder implementation - should be replaced with actual SPARC execution logic
+  throw new Error(`SPARC mode execution not yet implemented for mode: ${mode}`);
+}
+
 // Simple ID generation
 function generateId(): string {
   return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -239,13 +252,6 @@ export class ClaudeCodeMCPWrapper {
 
     // Execute the SPARC mode directly
     try {
-      // Import the execution function dynamically to avoid circular dependencies
-      // const { executeSparcMode } = await import('../cli/mcp-stdio-server.js');
-      // TODO: Implement proper SPARC mode execution or fix import path
-      const executeSparcMode = (mode: string, task: string, tools: any[], context: any) => {
-        throw new Error('SPARC mode execution not yet implemented in wrapper');
-      };
-
       const result = await executeSparcMode(
         mode,
         args.task,

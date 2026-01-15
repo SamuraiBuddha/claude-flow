@@ -1167,6 +1167,109 @@ export function isAgentState(obj: any): obj is AgentState {
   return obj && isAgentId(obj.id) && typeof obj.status === 'string';
 }
 
+// ===== SWARM AGENT AND TASK TYPES =====
+
+/**
+ * Represents an agent within a swarm execution context.
+ * This is a simplified agent representation for swarm coordination.
+ */
+export interface SwarmAgent {
+  /** Unique identifier for the agent */
+  id: string;
+  /** Human-readable name for the agent */
+  name: string;
+  /** Type/role of the agent */
+  type: AgentType;
+  /** Current status of the agent */
+  status: AgentStatus;
+  /** List of capabilities this agent possesses */
+  capabilities: string[];
+  /** Performance metrics for this agent */
+  metrics: SwarmAgentMetrics;
+  /** Current task being executed (optional) */
+  currentTask?: string;
+}
+
+/**
+ * Metrics for a swarm agent's performance
+ */
+export interface SwarmAgentMetrics {
+  /** Number of tasks successfully completed */
+  tasksCompleted: number;
+  /** Number of tasks that failed */
+  tasksFailed: number;
+  /** Total duration spent executing tasks (milliseconds) */
+  totalDuration: number;
+  /** Timestamp of last activity */
+  lastActivity: Date;
+}
+
+/**
+ * Represents a task within a swarm execution context.
+ * This is a simplified task representation for swarm coordination.
+ */
+export interface SwarmTask {
+  /** Unique identifier for the task */
+  id: string;
+  /** Type of the task */
+  type: TaskType;
+  /** Human-readable name for the task */
+  name: string;
+  /** Description of what the task does */
+  description: string;
+  /** Current status of the task */
+  status: TaskStatus;
+  /** Priority level of the task */
+  priority: TaskPriority;
+  /** ID of the agent assigned to this task (optional) */
+  assignedTo?: string;
+  /** Task dependencies (IDs of tasks that must complete first) */
+  dependencies: string[];
+  /** Input data for the task */
+  input?: any;
+  /** Output/result of the task (after completion) */
+  output?: any;
+  /** Error information if the task failed */
+  error?: string;
+  /** Timestamp when the task was created */
+  createdAt: Date;
+  /** Timestamp when the task started execution */
+  startedAt?: Date;
+  /** Timestamp when the task completed */
+  completedAt?: Date;
+  /** Metadata associated with the task */
+  metadata?: Record<string, any>;
+}
+
+/**
+ * Execution context for a swarm operation.
+ * Contains all the state and components needed to execute a swarm objective.
+ */
+export interface SwarmExecutionContext {
+  /** Unique identifier for the swarm */
+  swarmId: SwarmId;
+  /** The objective being pursued by the swarm */
+  objective: SwarmObjective;
+  /** Map of agent IDs to agent instances */
+  agents: Map<string, SwarmAgent>;
+  /** Map of task IDs to task instances */
+  tasks: Map<string, SwarmTask>;
+  /** Task scheduler for this swarm (generic to avoid circular deps) */
+  scheduler: any;
+  /** Monitor for this swarm (generic to avoid circular deps) */
+  monitor: any;
+  /** Memory manager for this swarm (generic to avoid circular deps) */
+  memoryManager: any;
+  /** Task executor for this swarm (generic to avoid circular deps) */
+  taskExecutor: any;
+  /** Timestamp when the swarm started */
+  startTime: Date;
+  /** Timestamp when the swarm ended (optional) */
+  endTime?: Date;
+  /** Current metrics for the swarm */
+  metrics: SwarmMetrics;
+}
+
 // ===== CONSTANTS =====
 
 export const SWARM_CONSTANTS = {

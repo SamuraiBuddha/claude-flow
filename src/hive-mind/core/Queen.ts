@@ -690,7 +690,8 @@ export class Queen extends EventEmitter {
     // Analyze strategy effectiveness and adjust
     const strategyPerformance = await this.db.getStrategyPerformance(this.config.swarmId);
 
-    for (const [strategyName, performance] of Object.entries(strategyPerformance)) {
+    for (const [strategyName, performanceData] of Object.entries(strategyPerformance)) {
+      const performance = performanceData as { successRate: number; [key: string]: any };
       if (performance.successRate < 0.7) {
         await this.adjustStrategy(strategyName, performance);
       }

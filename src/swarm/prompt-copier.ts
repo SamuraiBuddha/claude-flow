@@ -244,7 +244,7 @@ export class PromptCopier extends EventEmitter {
     }
   }
 
-  private async copyFilesParallel(): Promise<void> {
+  protected async copyFilesParallel(): Promise<void> {
     const workerCount = Math.min(this.options.maxWorkers, this.fileQueue.length);
     const chunkSize = Math.ceil(this.fileQueue.length / workerCount);
     const workers: Promise<void>[] = [];
@@ -361,7 +361,7 @@ export class PromptCopier extends EventEmitter {
     await fs.writeFile(destPath, mergedContent, 'utf-8');
   }
 
-  private async verifyFiles(): Promise<void> {
+  protected async verifyFiles(): Promise<void> {
     logger.info('Verifying copied files...');
 
     for (const file of this.fileQueue) {

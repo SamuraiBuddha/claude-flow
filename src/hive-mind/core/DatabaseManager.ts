@@ -343,8 +343,8 @@ For persistent storage options, see: https://github.com/ruvnet/claude-code-flow/
     const values: any[] = [];
 
     for (const [key, value] of Object.entries(updates)) {
-      if (value && typeof value === 'object' && value._raw) {
-        setClauses.push(`${key} = ${value._raw}`);
+      if (value && typeof value === 'object' && '_raw' in value) {
+        setClauses.push(`${key} = ${(value as { _raw: string })._raw}`);
       } else {
         setClauses.push(`${key} = ?`);
         values.push(value);

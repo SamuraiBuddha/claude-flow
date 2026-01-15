@@ -413,6 +413,7 @@ export class MCPIntegrationWrapper extends EventEmitter {
       executionId: generateId('mcp-execution'),
       timeout: this.config.toolTimeout,
       maxRetries: this.config.maxRetries,
+      logger: this.logger,
     };
   }
 

@@ -49,6 +49,13 @@ export class HiveMind extends EventEmitter {
   }
 
   /**
+   * Get the swarm ID
+   */
+  getSwarmId(): string {
+    return this.id;
+  }
+
+  /**
    * Initialize the Hive Mind and all subsystems
    */
   async initialize(): Promise<string> {

@@ -1269,7 +1269,7 @@ export class Orchestrator implements IOrchestrator {
   /**
    * Update Claude API configuration dynamically
    */
-  updateClaudeConfig(config: Partial<Config['claude']>): void {
+  updateClaudeConfig(config: Partial<NonNullable<Config['claude']>>): void {
     this.configManager.setClaudeConfig(config);
 
     if (this.claudeClient) {

@@ -9,6 +9,7 @@ import { agenticHookManager } from './hook-manager.js';
 import type {
   AgenticHookContext,
   HookHandlerResult,
+  HookRegistration,
   MemoryHookPayload,
   SideEffect,
 } from './types.js';
@@ -123,10 +124,12 @@ export const postMemoryStoreHook = {
     }
     
     // Update memory index for search
-    await updateMemoryIndex(namespace, key, value, context);
-    
+    if (key) {
+      await updateMemoryIndex(namespace, key, value, context);
+    }
+
     // Neural pattern detection
-    const patterns = await detectMemoryPatterns(namespace, key, value, context);
+    const patterns = key ? await detectMemoryPatterns(namespace, key, value, context) : [];
     if (patterns.length > 0) {
       sideEffects.push({
         type: 'neural',
@@ -701,10 +704,10 @@ function isTemporalPattern(history: any[]): boolean {
 // ===== Register Hooks =====
 
 export function registerMemoryHooks(): void {
-  agenticHookManager.register(preMemoryStoreHook);
-  agenticHookManager.register(postMemoryStoreHook);
-  agenticHookManager.register(preMemoryRetrieveHook);
-  agenticHookManager.register(postMemoryRetrieveHook);
-  agenticHookManager.register(memorySyncHook);
-  agenticHookManager.register(memoryPersistHook);
+  agenticHookManager.register(preMemoryStoreHook as HookRegistration);
+  agenticHookManager.register(postMemoryStoreHook as HookRegistration);
+  agenticHookManager.register(preMemoryRetrieveHook as HookRegistration);
+  agenticHookManager.register(postMemoryRetrieveHook as HookRegistration);
+  agenticHookManager.register(memorySyncHook as HookRegistration);
+  agenticHookManager.register(memoryPersistHook as HookRegistration);
 }

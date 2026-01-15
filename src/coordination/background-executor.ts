@@ -285,16 +285,17 @@ export class BackgroundExecutor extends EventEmitter {
       // Set timeout if specified
       if (task.options?.timeout) {
         setTimeout(() => {
-          if (this.processes.has(task.id)) {
+          const proc = this.processes.get(task.id);
+          if (proc) {
             this.logger.warn(`Task ${task.id} timed out after ${task.options?.timeout}ms`);
-            process.kill('SIGTERM');
+            proc.kill('SIGTERM');
           }
         }, task.options.timeout);
       }
 
       // For detached processes, unref to allow main process to exit
       if (task.options?.detached) {
-        process.unref();
+        childProcess.unref();
       }
 
       this.emit('task:started', task);

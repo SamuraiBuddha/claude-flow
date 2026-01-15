@@ -11,7 +11,7 @@ import { execAsync } from '../utils/helpers.js';
 import { existsSync } from 'fs';
 import { join } from 'path';
 
-export interface RuvSwarmToolContext extends MCPContext {
+export interface RuvSwarmToolContext extends Omit<MCPContext, 'sessionId'> {
   workingDirectory?: string;
   swarmId?: string;
   sessionId?: string;
@@ -588,9 +588,19 @@ export async function initializeRuvSwarmIntegration(
   workingDirectory: string,
   logger?: ILogger,
 ): Promise<RuvSwarmResponse> {
+  // Create a minimal logger if not provided
+  const contextLogger = logger || {
+    debug: () => {},
+    info: () => {},
+    warn: () => {},
+    error: () => {},
+    configure: async () => {},
+  } as ILogger;
+
   const context: RuvSwarmToolContext = {
     workingDirectory,
     sessionId: `claude-flow-${Date.now()}`,
+    logger: contextLogger,
   };
 
   logger?.info('Initializing ruv-swarm integration', { workingDirectory });

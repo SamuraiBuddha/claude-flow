@@ -200,7 +200,7 @@ export class SwarmCoordinator extends EventEmitter implements SwarmEventEmitter 
     // Pause all agents
     for (const agent of this.agents.values()) {
       if (agent.status === 'busy') {
-        await this.pauseAgent(agent.id);
+        await this.pauseAgent(agent.id.id);
       }
     }
 
@@ -226,7 +226,7 @@ export class SwarmCoordinator extends EventEmitter implements SwarmEventEmitter 
     // Resume all paused agents
     for (const agent of this.agents.values()) {
       if (agent.status === 'paused') {
-        await this.resumeAgent(agent.id);
+        await this.resumeAgent(agent.id.id);
       }
     }
 
@@ -275,6 +275,7 @@ export class SwarmCoordinator extends EventEmitter implements SwarmEventEmitter 
         allowedFailures: Math.floor(this.config.maxAgents * 0.1),
         recoveryTime: 5 * 60 * 1000, // 5 minutes
         milestones: [],
+        resourceLimits: this.config.resourceLimits || {},
       },
       tasks: [],
       dependencies: [],
@@ -531,7 +532,7 @@ export class SwarmCoordinator extends EventEmitter implements SwarmEventEmitter 
         timestamp: new Date(),
         type: 'startup_error',
         message: error instanceof Error ? error.message : String(error),
-        stack: error.stack,
+        stack: error instanceof Error ? error.stack : undefined,
         context: { agentId },
         severity: 'high',
         resolved: false,
@@ -688,10 +689,11 @@ export class SwarmCoordinator extends EventEmitter implements SwarmEventEmitter 
 
     // Select agent if not specified
     if (!agentId) {
-      agentId = await this.selectAgentForTask(task);
-      if (!agentId) {
+      const selectedAgent = await this.selectAgentForTask(task);
+      if (!selectedAgent) {
         throw new Error('No suitable agent available for task');
       }
+      agentId = selectedAgent;
     }
 
     const agent = this.agents.get(agentId);
@@ -1600,7 +1602,9 @@ export class SwarmCoordinator extends EventEmitter implements SwarmEventEmitter 
     const requestsParallelAgents = eachAgentPattern.test(objective.description);
 
     // Create tasks with specific prompts for Claude
-    if (requestsParallelAgents && this.config.mode === 'parallel') {
+    // Use distributed or mesh mode for parallel agent execution
+    const isParallelMode = this.config.mode === 'distributed' || this.config.mode === 'mesh';
+    if (requestsParallelAgents && isParallelMode) {
       // Create parallel tasks for each agent type
       const agentTypes = this.determineRequiredAgentTypes(objective.strategy);
       this.logger.info('Creating parallel tasks for each agent type', {
@@ -1725,7 +1729,7 @@ Make sure the documentation is clear, complete, and helps users understand and u
     } else {
       // For other strategies, create a comprehensive single task
       tasks.push(
-        this.createTaskForObjective('execute-objective', 'generic', {
+        this.createTaskForObjective('execute-objective', 'custom', {
           title: 'Execute Objective',
           description: objective.description,
           instructions: `Please complete the following request:
@@ -2254,16 +2258,16 @@ Ensure your implementation is complete, well-structured, and follows best practi
 
     try {
       // Use Claude Flow executor for full SPARC system in non-interactive mode
-      const { ClaudeFlowExecutor } = await import('./claude-flow-executor.ts');
+      const { ClaudeFlowExecutor } = await import('./claude-flow-executor.js');
       const executor = new ClaudeFlowExecutor({
         logger: this.logger,
         claudeFlowPath: getClaudeFlowBin(),
         enableSparc: true,
-        verbose: this.config.logging?.level === 'debug',
+        verbose: (this.config as any).logging?.level === 'debug',
         timeoutMinutes: this.config.taskTimeoutMinutes,
       });
 
-      const result = await executor.executeTask(task, agent, targetDir);
+      const result = await executor.executeTask(task, agent, targetDir ?? undefined);
 
       this.logger.info('Task execution completed', {
         taskId: task.id.id,
@@ -3240,5 +3244,202 @@ console.log('Tests completed for: ${task.name}');
     if (this.jsonOutputAggregator) {
       this.jsonOutputAggregator.addArtifact(key, artifact);
     }
+  }
+
+  /**
+   * Create a Gradio application
+   */
+  private async createGradioApp(task: TaskDefinition, workDir: string): Promise<any> {
+    const projectDir = `${workDir}/gradio-app`;
+    await fs.mkdir(projectDir, { recursive: true });
+
+    const gradioCode = `import gradio as gr
+
+def greet(name: str) -> str:
+    """A simple greeting function."""
+    return f"Hello, {name}! Welcome to the Gradio app created by Claude Flow Swarm."
+
+# Create the Gradio interface
+demo = gr.Interface(
+    fn=greet,
+    inputs=gr.Textbox(label="Enter your name", placeholder="Type here..."),
+    outputs=gr.Textbox(label="Greeting"),
+    title="${task.name}",
+    description="${task.description.replace(/"/g, '\\"')}",
+)
+
+if __name__ == "__main__":
+    demo.launch()
+`;
+
+    await fs.writeFile(`${projectDir}/app.py`, gradioCode);
+
+    const requirements = `gradio>=4.0.0
+`;
+    await fs.writeFile(`${projectDir}/requirements.txt`, requirements);
+
+    const readme = `# Gradio App
+
+Generated by Claude Flow Swarm.
+
+## Setup
+
+\`\`\`bash
+pip install -r requirements.txt
+\`\`\`
+
+## Run
+
+\`\`\`bash
+python app.py
+\`\`\`
+
+## Description
+${task.description}
+`;
+    await fs.writeFile(`${projectDir}/README.md`, readme);
+
+    return {
+      success: true,
+      output: {
+        message: 'Gradio app created successfully',
+        location: projectDir,
+        files: ['app.py', 'requirements.txt', 'README.md'],
+      },
+      artifacts: {
+        mainFile: `${projectDir}/app.py`,
+        requirements: `${projectDir}/requirements.txt`,
+      },
+    };
+  }
+
+  /**
+   * Create a Python REST API (FastAPI)
+   */
+  private async createPythonRestAPI(task: TaskDefinition, workDir: string): Promise<any> {
+    const projectDir = `${workDir}/fastapi-app`;
+    await fs.mkdir(projectDir, { recursive: true });
+
+    const fastapiCode = `from fastapi import FastAPI
+from pydantic import BaseModel
+from typing import List, Optional
+from datetime import datetime
+
+app = FastAPI(
+    title="${task.name}",
+    description="${task.description.replace(/"/g, '\\"')}",
+    version="1.0.0"
+)
+
+class Item(BaseModel):
+    id: Optional[int] = None
+    name: str
+    description: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+items_db: List[Item] = []
+
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "service": "FastAPI REST API",
+        "swarmId": "${this.swarmId.id}",
+        "created": datetime.now().isoformat()
+    }
+
+@app.get("/api/v1/items", response_model=List[Item])
+async def get_items():
+    return items_db
+
+@app.get("/api/v1/items/{item_id}", response_model=Item)
+async def get_item(item_id: int):
+    for item in items_db:
+        if item.id == item_id:
+            return item
+    return {"error": "Item not found"}
+
+@app.post("/api/v1/items", response_model=Item)
+async def create_item(item: Item):
+    item.id = len(items_db) + 1
+    item.created_at = datetime.now()
+    items_db.append(item)
+    return item
+
+@app.put("/api/v1/items/{item_id}", response_model=Item)
+async def update_item(item_id: int, item: Item):
+    for i, existing in enumerate(items_db):
+        if existing.id == item_id:
+            item.id = item_id
+            items_db[i] = item
+            return item
+    return {"error": "Item not found"}
+
+@app.delete("/api/v1/items/{item_id}")
+async def delete_item(item_id: int):
+    for i, item in enumerate(items_db):
+        if item.id == item_id:
+            del items_db[i]
+            return {"message": "Item deleted"}
+    return {"error": "Item not found"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+`;
+
+    await fs.writeFile(`${projectDir}/main.py`, fastapiCode);
+
+    const requirements = `fastapi>=0.100.0
+uvicorn>=0.23.0
+pydantic>=2.0.0
+`;
+    await fs.writeFile(`${projectDir}/requirements.txt`, requirements);
+
+    const readme = `# FastAPI REST API
+
+Generated by Claude Flow Swarm.
+
+## Setup
+
+\`\`\`bash
+pip install -r requirements.txt
+\`\`\`
+
+## Run
+
+\`\`\`bash
+python main.py
+\`\`\`
+
+Or with uvicorn:
+
+\`\`\`bash
+uvicorn main:app --reload
+\`\`\`
+
+## API Documentation
+
+Once running, visit:
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+
+## Description
+${task.description}
+`;
+    await fs.writeFile(`${projectDir}/README.md`, readme);
+
+    return {
+      success: true,
+      output: {
+        message: 'FastAPI REST API created successfully',
+        location: projectDir,
+        files: ['main.py', 'requirements.txt', 'README.md'],
+      },
+      artifacts: {
+        mainFile: `${projectDir}/main.py`,
+        requirements: `${projectDir}/requirements.txt`,
+      },
+    };
   }
 }

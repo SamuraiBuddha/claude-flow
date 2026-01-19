@@ -18,6 +18,11 @@ export interface SwarmMemoryEntry {
     tags?: string[];
     priority?: number;
     shareLevel?: 'private' | 'team' | 'public';
+    // Sharing metadata (added when entry is shared)
+    originalId?: string;
+    sharedFrom?: string;
+    sharedTo?: string;
+    sharedAt?: Date;
   };
 }
 
@@ -175,13 +180,17 @@ export class SwarmMemoryManager extends EventEmitter {
     this.agentMemories.get(agentId)!.add(entryId);
 
     // Store in base memory for persistence
-    await this.baseMemory.remember({
+    await this.baseMemory.store({
+      id: entryId,
+      agentId,
+      sessionId: `swarm-${this.config.namespace}`,
       namespace: this.config.namespace,
-      key: `entry:${entryId}`,
+      type: 'artifact',
       content: JSON.stringify(entry),
+      timestamp: new Date(),
+      tags: entry.metadata.tags,
       metadata: {
         type: 'swarm-memory',
-        agentId,
         entryType: type,
         shareLevel: entry.metadata.shareLevel,
       },

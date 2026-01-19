@@ -625,7 +625,7 @@ export class SparcTaskExecutor {
   // Utility methods for language-specific details
 
   private getTestFramework(language: string): string {
-    const frameworks = {
+    const frameworks: Record<string, string> = {
       python: 'pytest',
       javascript: 'jest',
       typescript: 'jest',
@@ -634,8 +634,8 @@ export class SparcTaskExecutor {
     return frameworks[language] || 'generic';
   }
 
-  private getProjectStructure(appType: string, language: string): any {
-    const structures = {
+  private getProjectStructure(appType: string, language: string): { directories: string[]; files: string[] } {
+    const structures: Record<string, { directories: string[]; files: string[] }> = {
       'python-rest-api': {
         directories: ['src', 'tests', 'docs', 'config', 'migrations', 'scripts'],
         files: ['requirements.txt', 'setup.py', 'pytest.ini', '.gitignore', 'Dockerfile'],

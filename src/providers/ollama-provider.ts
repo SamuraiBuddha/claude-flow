@@ -128,7 +128,7 @@ export class OllamaProvider extends BaseProvider {
     },
   };
 
-  private baseUrl: string;
+  private baseUrl: string = 'http://localhost:11434';
   private availableModels: Set<string> = new Set();
 
   protected async doInitialize(): Promise<void> {
@@ -149,9 +149,9 @@ export class OllamaProvider extends BaseProvider {
         throw new Error(`Failed to fetch models: ${response.status}`);
       }
       
-      const data = await response.json();
+      const data = await response.json() as { models?: OllamaModelInfo[] };
       this.availableModels.clear();
-      
+
       if (data.models && Array.isArray(data.models)) {
         data.models.forEach((model: OllamaModelInfo) => {
           this.availableModels.add(model.name);
@@ -214,7 +214,7 @@ export class OllamaProvider extends BaseProvider {
         await this.handleErrorResponse(response);
       }
 
-      const data: OllamaResponse = await response.json();
+      const data = await response.json() as OllamaResponse;
       
       // Calculate metrics
       const promptTokens = data.prompt_eval_count || this.estimateTokens(JSON.stringify(request.messages));
@@ -387,8 +387,8 @@ export class OllamaProvider extends BaseProvider {
         throw new Error('Model not found');
       }
 
-      const data = await response.json();
-      
+      const data = await response.json() as { name?: string; description?: string; details?: { parameter_size?: string; quantization_level?: string; format?: string } };
+
       return {
         model,
         name: data.name || model,
@@ -397,11 +397,6 @@ export class OllamaProvider extends BaseProvider {
         maxOutputTokens: this.capabilities.maxOutputTokens[model] || 2048,
         supportedFeatures: ['chat', 'completion'],
         pricing: this.capabilities.pricing![model],
-        metadata: {
-          parameterSize: data.details?.parameter_size,
-          quantization: data.details?.quantization_level,
-          format: data.details?.format,
-        },
       };
     } catch (error) {
       // Fallback to default info

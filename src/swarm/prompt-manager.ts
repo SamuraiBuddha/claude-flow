@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { EventEmitter } from 'events';
 import { copyPromptsEnhanced, EnhancedPromptCopier } from './prompt-copier-enhanced.js';
-import type { CopyOptions, CopyResult } from './prompt-copier.js';
+import { copyPrompts, type CopyOptions, type CopyResult } from './prompt-copier.js';
 import {
   PromptConfigManager,
   PromptPathResolver,

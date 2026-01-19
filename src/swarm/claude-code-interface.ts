@@ -239,9 +239,9 @@ export class ClaudeCodeInterface extends EventEmitter {
 
       // Build Claude command
       const command = this.buildClaudeCommand(options);
-      
+
       // Spawn process
-      const process = spawn(command.executable, command.args, {
+      const childProcess = spawn(command.executable, command.args, {
         cwd: options.workingDirectory || this.config.workingDirectory,
         env: {
           ...process.env,
@@ -252,7 +252,7 @@ export class ClaudeCodeInterface extends EventEmitter {
         detached: false,
       });
 
-      if (!process.pid) {
+      if (!childProcess.pid) {
         throw new Error('Failed to spawn Claude process');
       }
 
@@ -260,8 +260,8 @@ export class ClaudeCodeInterface extends EventEmitter {
       const agentId = generateId('claude-agent');
       const agent: ClaudeAgent = {
         id: agentId,
-        processId: process.pid,
-        process,
+        processId: childProcess.pid,
+        process: childProcess,
         type: options.type,
         capabilities: options.capabilities || [],
         status: 'initializing',
@@ -287,14 +287,14 @@ export class ClaudeCodeInterface extends EventEmitter {
 
       this.logger.info('Claude agent spawned successfully', {
         agentId,
-        processId: process.pid,
+        processId: childProcess.pid,
         type: options.type,
       });
 
       this.emit('agent:spawned', {
         agentId,
         type: options.type,
-        processId: process.pid,
+        processId: childProcess.pid,
       });
 
       return agentId;
@@ -348,7 +348,7 @@ export class ClaudeCodeInterface extends EventEmitter {
           options,
         },
         retryCount: 0,
-        maxRetries: options.maxRetries || 3,
+        maxRetries: (options as any).maxRetries || 3,
       };
 
       this.activeExecutions.set(executionId, execution);
@@ -368,7 +368,7 @@ export class ClaudeCodeInterface extends EventEmitter {
       // Update execution record
       execution.endTime = new Date();
       execution.duration = execution.endTime.getTime() - execution.startTime.getTime();
-      execution.output = result.result;
+      execution.output = result.output;
       execution.tokensUsed = result.metadata?.tokensUsed;
 
       if (result.success) {
@@ -862,7 +862,7 @@ export class ClaudeCodeInterface extends EventEmitter {
       const context: ExecutionContext = {
         task: taskDefinition,
         agent: this.convertToAgentState(agent),
-        workingDirectory: options.workingDirectory || this.config.workingDirectory,
+        workingDirectory: (options as any).workingDirectory || this.config.workingDirectory,
         tempDirectory: path.join(this.config.workingDirectory, 'temp', agent.id),
         logDirectory: path.join(this.config.workingDirectory, 'logs', agent.id),
         environment: {

@@ -9,6 +9,7 @@ import { agenticHookManager } from './hook-manager.js';
 import type {
   AgenticHookContext,
   HookHandlerResult,
+  HookRegistration,
   WorkflowHookPayload,
   WorkflowDecision,
   Learning,
@@ -860,7 +861,17 @@ async function analyzeErrorPattern(
   context: AgenticHookContext
 ): Promise<any> {
   // Analyze error to find patterns
-  const pattern = {
+  const pattern: {
+    type: string;
+    confidence: number;
+    context: {
+      step: any;
+      provider: any;
+      errorMessage: string;
+      recurring?: boolean;
+      occurrences?: number;
+    };
+  } = {
     type: classifyError(error),
     confidence: 0.7,
     context: {
@@ -869,18 +880,18 @@ async function analyzeErrorPattern(
       errorMessage: error.message,
     },
   };
-  
+
   // Check for similar errors
   const errorHistory = await context.memory.cache.get(
     `errors:${workflowId}:${pattern.type}`
   ) || [];
-  
+
   if (errorHistory.length > 5) {
     pattern.confidence = 0.9;
     pattern.context.recurring = true;
     pattern.context.occurrences = errorHistory.length;
   }
-  
+
   return pattern;
 }
 
@@ -1018,9 +1029,9 @@ function classifyError(error: Error): string {
 // ===== Register Hooks =====
 
 export function registerWorkflowHooks(): void {
-  agenticHookManager.register(workflowStartHook);
-  agenticHookManager.register(workflowStepHook);
-  agenticHookManager.register(workflowDecisionHook);
-  agenticHookManager.register(workflowCompleteHook);
-  agenticHookManager.register(workflowErrorHook);
+  agenticHookManager.register(workflowStartHook as HookRegistration);
+  agenticHookManager.register(workflowStepHook as HookRegistration);
+  agenticHookManager.register(workflowDecisionHook as HookRegistration);
+  agenticHookManager.register(workflowCompleteHook as HookRegistration);
+  agenticHookManager.register(workflowErrorHook as HookRegistration);
 }

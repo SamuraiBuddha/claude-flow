@@ -9,6 +9,7 @@ import { agenticHookManager } from './hook-manager.js';
 import type {
   AgenticHookContext,
   HookHandlerResult,
+  HookRegistration,
   NeuralHookPayload,
   Pattern,
   TrainingData,
@@ -131,10 +132,12 @@ export const postNeuralTrainHook = {
     });
     
     // Update model performance history
-    await updateModelPerformance(modelId, accuracy, context);
-    
+    if (accuracy !== undefined) {
+      await updateModelPerformance(modelId, accuracy, context);
+    }
+
     // Check if model should be promoted
-    const shouldPromote = await evaluateModelPromotion(modelId, accuracy, context);
+    const shouldPromote = accuracy !== undefined ? await evaluateModelPromotion(modelId, accuracy, context) : false;
     if (shouldPromote) {
       sideEffects.push({
         type: 'notification',
@@ -750,9 +753,9 @@ async function loadHistoricalPatterns(
 // ===== Register Hooks =====
 
 export function registerNeuralHooks(): void {
-  agenticHookManager.register(preNeuralTrainHook);
-  agenticHookManager.register(postNeuralTrainHook);
-  agenticHookManager.register(neuralPatternDetectedHook);
-  agenticHookManager.register(neuralPredictionHook);
-  agenticHookManager.register(neuralAdaptationHook);
+  agenticHookManager.register(preNeuralTrainHook as HookRegistration);
+  agenticHookManager.register(postNeuralTrainHook as HookRegistration);
+  agenticHookManager.register(neuralPatternDetectedHook as HookRegistration);
+  agenticHookManager.register(neuralPredictionHook as HookRegistration);
+  agenticHookManager.register(neuralAdaptationHook as HookRegistration);
 }

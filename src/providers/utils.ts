@@ -88,6 +88,28 @@ export function getDefaultProviderConfig(): ProviderManagerConfig {
         timeout: 120000, // Longer timeout for local models
         retryAttempts: 2,
       },
+      'llama-cpp': {
+        provider: 'llama-cpp',
+        apiUrl: process.env.LLAMA_CPP_API_URL || 'http://localhost:8080',
+        model: 'llama-2-7b',
+        temperature: 0.7,
+        maxTokens: 2048,
+        enableStreaming: true,
+        enableCaching: false,
+        timeout: 120000,
+        retryAttempts: 2,
+      },
+      custom: {
+        provider: 'custom',
+        apiUrl: process.env.CUSTOM_LLM_API_URL,
+        model: 'custom-model',
+        temperature: 0.7,
+        maxTokens: 4096,
+        enableStreaming: true,
+        enableCaching: true,
+        timeout: 60000,
+        retryAttempts: 3,
+      },
     },
     fallbackStrategy: getDefaultFallbackStrategy(),
     loadBalancing: {
@@ -170,10 +192,10 @@ function loadProviderConfigs(
       config.model = process.env[`${envPrefix}MODEL`] as any;
     }
     if (process.env[`${envPrefix}TEMPERATURE`]) {
-      config.temperature = parseFloat(process.env[`${envPrefix}TEMPERATURE`]);
+      config.temperature = parseFloat(process.env[`${envPrefix}TEMPERATURE`]!);
     }
     if (process.env[`${envPrefix}MAX_TOKENS`]) {
-      config.maxTokens = parseInt(process.env[`${envPrefix}MAX_TOKENS`], 10);
+      config.maxTokens = parseInt(process.env[`${envPrefix}MAX_TOKENS`]!, 10);
     }
     if (process.env[`${envPrefix}API_URL`]) {
       config.apiUrl = process.env[`${envPrefix}API_URL`];

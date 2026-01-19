@@ -212,7 +212,7 @@ export function deepClone<T>(obj: T): T {
 /**
  * Merges multiple objects deeply
  */
-export function deepMerge<T extends Record<string, unknown>>(
+export function deepMerge<T extends object>(
   target: T,
   ...sources: Partial<T>[]
 ): T {

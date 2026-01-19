@@ -1039,7 +1039,12 @@ export class CloudManager extends EventEmitter {
   }
 
   private async initializeDefaultProviders(): Promise<void> {
-    const defaultProviders = [
+    const defaultProviders: Array<{
+      name: string;
+      type: 'aws' | 'gcp' | 'azure';
+      configuration: CloudProvider['configuration'];
+      pricing: CloudProvider['pricing'];
+    }> = [
       {
         name: 'AWS',
         type: 'aws' as const,

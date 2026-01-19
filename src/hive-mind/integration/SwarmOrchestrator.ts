@@ -16,12 +16,13 @@ import {
   ExecutionPlan,
   OrchestrationResult,
   TaskAssignment,
+  AgentCapability,
 } from '../types.js';
 
 export class SwarmOrchestrator extends EventEmitter {
   private hiveMind: HiveMind;
-  private db: DatabaseManager;
-  private mcpWrapper: MCPToolWrapper;
+  private db!: DatabaseManager;
+  private mcpWrapper!: MCPToolWrapper;
   private executionPlans: Map<string, ExecutionPlan>;
   private taskAssignments: Map<string, TaskAssignment[]>;
   private activeExecutions: Map<string, any>;
@@ -90,7 +91,7 @@ export class SwarmOrchestrator extends EventEmitter {
 
     // Create assignments for each phase
     const phaseAssignments = await Promise.all(
-      phases.map((phase) => this.createPhaseAssignments(task, phase, analysis)),
+      phases.map((phase: string) => this.createPhaseAssignments(task, phase, analysis)),
     );
 
     return {
@@ -110,7 +111,15 @@ export class SwarmOrchestrator extends EventEmitter {
    * Execute task according to plan
    */
   private async executeTask(task: Task, plan: ExecutionPlan): Promise<void> {
-    const execution = {
+    const execution: {
+      taskId: string;
+      plan: ExecutionPlan;
+      startTime: number;
+      currentPhase: number;
+      phaseResults: any[];
+      status: string;
+      error?: any;
+    } = {
       taskId: task.id,
       plan,
       startTime: Date.now(),
@@ -502,7 +511,7 @@ export class SwarmOrchestrator extends EventEmitter {
     const suitableAgents = agents.filter(
       (agent) =>
         agent.status === 'idle' &&
-        requiredCapabilities.every((cap) => agent.capabilities.includes(cap)),
+        requiredCapabilities.every((cap) => agent.capabilities.includes(cap as AgentCapability)),
     );
 
     if (suitableAgents.length === 0) {
@@ -578,7 +587,7 @@ export class SwarmOrchestrator extends EventEmitter {
    * Summarize phase results
    */
   private summarizeResults(results: any[]): any {
-    const successful = results.filter((r) => r.success).length;
+    const successful = results.filter((r: any) => r.success).length;
     const total = results.length;
 
     return {
@@ -672,7 +681,7 @@ export class SwarmOrchestrator extends EventEmitter {
   private createExecutionSummary(execution: any): any {
     const phaseCount = execution.phaseResults.length;
     const successfulPhases = execution.phaseResults.filter(
-      (r) => r.summary?.successRate > 0.5,
+      (r: any) => r.summary?.successRate > 0.5,
     ).length;
 
     return {
@@ -691,7 +700,7 @@ export class SwarmOrchestrator extends EventEmitter {
     await this.db.createCommunication({
       from_agent_id: 'orchestrator',
       to_agent_id: agentId,
-      swarm_id: this.hiveMind.id,
+      swarm_id: this.hiveMind.getSwarmId(),
       message_type: 'task_cancellation',
       content: JSON.stringify({ taskId, reason: 'User cancelled' }),
       priority: 'urgent',
@@ -703,7 +712,7 @@ export class SwarmOrchestrator extends EventEmitter {
    */
   private async analyzeLoadDistribution(): Promise<any> {
     const agents = await this.hiveMind.getAgents();
-    const tasks = await this.db.getActiveTasks(this.hiveMind.id);
+    const tasks = await this.db.getActiveTasks(this.hiveMind.getSwarmId());
 
     const busyAgents = agents.filter((a) => a.status === 'busy');
     const idleAgents = agents.filter((a) => a.status === 'idle');
@@ -772,7 +781,7 @@ export class SwarmOrchestrator extends EventEmitter {
     await this.db.createCommunication({
       from_agent_id: 'orchestrator',
       to_agent_id: fromAgentId,
-      swarm_id: this.hiveMind.id,
+      swarm_id: this.hiveMind.getSwarmId(),
       message_type: 'task_reassignment',
       content: JSON.stringify({ taskId, reassignedTo: toAgentId }),
       priority: 'high',
@@ -785,7 +794,7 @@ export class SwarmOrchestrator extends EventEmitter {
     await this.db.createCommunication({
       from_agent_id: 'orchestrator',
       to_agent_id: toAgentId,
-      swarm_id: this.hiveMind.id,
+      swarm_id: this.hiveMind.getSwarmId(),
       message_type: 'task_assignment',
       content: JSON.stringify({
         taskId,

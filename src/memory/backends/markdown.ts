@@ -114,7 +114,7 @@ export class MarkdownBackend implements IMemoryBackend {
     }
 
     if (query.tags && query.tags.length > 0) {
-      results = results.filter((e) => query.tags!.some((tag) => e.tags.includes(tag)));
+      results = results.filter((e) => e.tags && query.tags!.some((tag) => e.tags!.includes(tag)));
     }
 
     if (query.startTime) {
@@ -130,7 +130,7 @@ export class MarkdownBackend implements IMemoryBackend {
       results = results.filter(
         (e) =>
           e.content.toLowerCase().includes(searchLower) ||
-          e.tags.some((tag) => tag.toLowerCase().includes(searchLower)),
+          (e.tags && e.tags.some((tag) => tag.toLowerCase().includes(searchLower))),
       );
     }
 
@@ -201,7 +201,7 @@ export class MarkdownBackend implements IMemoryBackend {
 
       this.logger.info('Loaded memory index', { entries: this.entries.size });
     } catch (error) {
-      if (error.code !== 'ENOENT') {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         this.logger.warn('Failed to load index', { error });
       }
       // Start with empty index if file doesn't exist
@@ -256,13 +256,13 @@ export class MarkdownBackend implements IMemoryBackend {
       lines.push(`**Parent**: ${entry.parentId}`, '');
     }
 
-    if (entry.tags.length > 0) {
+    if (entry.tags && entry.tags.length > 0) {
       lines.push(`**Tags**: ${entry.tags.join(', ')}`, '');
     }
 
     lines.push('## Content', '', entry.content, '');
 
-    if (Object.keys(entry.context).length > 0) {
+    if (entry.context && Object.keys(entry.context).length > 0) {
       lines.push('## Context', '', '```json');
       lines.push(JSON.stringify(entry.context, null, 2));
       lines.push('```', '');

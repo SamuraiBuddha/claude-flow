@@ -1,6 +1,16 @@
-import { dirname } from 'node:path';
+import { dirname, join as pathJoin } from 'node:path';
 import { fileURLToPath } from 'node:url';
-const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Handle __dirname for both ESM and CommonJS
+// @ts-ignore - import.meta may not be available in CommonJS but this handles both cases
+const __dirname = (() => {
+  try {
+    // @ts-ignore - dynamic access to import.meta for ESM/CommonJS compatibility
+    return dirname(fileURLToPath(import.meta.url));
+  } catch {
+    return process.cwd();
+  }
+})();
 /**
  * Migration Runner - Executes migration strategies
  */
@@ -109,7 +119,7 @@ export class MigrationRunner {
     } catch (error) {
       result.errors.push({
         error: error instanceof Error ? error.message : String(error),
-        stack: error.stack,
+        stack: error instanceof Error ? error.stack : undefined,
       });
       this.progress.error('Migration failed');
 
@@ -163,7 +173,7 @@ export class MigrationRunner {
     await fs.ensureDir(commandsTarget);
 
     // Copy optimized commands
-    for (const command of this.manifest.files.commands) {
+    for (const command of Object.values(this.manifest.files.commands)) {
       const sourceFile = path.join(commandsSource, command.source);
       const targetFile = path.join(commandsTarget, command.target);
 
@@ -384,7 +394,9 @@ export class MigrationRunner {
 
     // Confirm rollback
     if (!this.options.force) {
-      const confirm = await inquirer.prompt([
+      const inquirerModule = inquirer as any;
+      const promptFn = inquirerModule.default?.prompt || inquirerModule.prompt;
+      const confirm = await promptFn([
         {
           type: 'confirm',
           name: 'proceed',
@@ -479,7 +491,9 @@ export class MigrationRunner {
       });
     }
 
-    const answers = await inquirer.prompt(questions);
+    const inquirerModule = inquirer as any;
+    const promptFn = inquirerModule.default?.prompt || inquirerModule.prompt;
+    const answers = await promptFn(questions);
 
     if (answers.preserveCustom) {
       this.options.preserveCustom = true;
@@ -493,15 +507,15 @@ export class MigrationRunner {
     return {
       version: '1.0.0',
       files: {
-        commands: [
-          { source: 'sparc.md', target: 'sparc.md' },
-          { source: 'sparc/architect.md', target: 'sparc-architect.md' },
-          { source: 'sparc/code.md', target: 'sparc-code.md' },
-          { source: 'sparc/tdd.md', target: 'sparc-tdd.md' },
-          { source: 'claude-flow-help.md', target: 'claude-flow-help.md' },
-          { source: 'claude-flow-memory.md', target: 'claude-flow-memory.md' },
-          { source: 'claude-flow-swarm.md', target: 'claude-flow-swarm.md' },
-        ],
+        commands: {
+          'sparc': { source: 'sparc.md', target: 'sparc.md' },
+          'sparc-architect': { source: 'sparc/architect.md', target: 'sparc-architect.md' },
+          'sparc-code': { source: 'sparc/code.md', target: 'sparc-code.md' },
+          'sparc-tdd': { source: 'sparc/tdd.md', target: 'sparc-tdd.md' },
+          'claude-flow-help': { source: 'claude-flow-help.md', target: 'claude-flow-help.md' },
+          'claude-flow-memory': { source: 'claude-flow-memory.md', target: 'claude-flow-memory.md' },
+          'claude-flow-swarm': { source: 'claude-flow-swarm.md', target: 'claude-flow-swarm.md' },
+        },
         configurations: {},
         templates: {},
       },

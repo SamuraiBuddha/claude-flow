@@ -6,6 +6,14 @@ import { SwarmMonitor } from './swarm-monitor.js';
 import type { AdvancedTaskScheduler } from './advanced-scheduler.js';
 import { MemoryManager } from '../memory/manager.js';
 
+// Local message interface for coordinator
+interface Message {
+  type: string;
+  from: string;
+  to?: string;
+  payload?: any;
+}
+
 export interface SwarmAgent {
   id: string;
   name: string;
@@ -182,7 +190,9 @@ export class SwarmCoordinator extends EventEmitter {
     this.stopBackgroundWorkers();
 
     // Stop subsystems
-    await this.scheduler.shutdown();
+    if (this.scheduler) {
+      await this.scheduler.shutdown();
+    }
 
     if (this.monitor) {
       this.monitor.stop();

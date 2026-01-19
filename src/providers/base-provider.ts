@@ -58,8 +58,8 @@ export abstract class BaseProvider extends EventEmitter implements ILLMProvider 
     this.logger = options.logger;
     this.config = options.config;
     
-    // Initialize circuit breaker
-    this.circuitBreaker = circuitBreaker(`llm-${this.name}`, {
+    // Initialize circuit breaker (use 'unknown' as placeholder since name is abstract)
+    this.circuitBreaker = circuitBreaker(`llm-provider`, {
       threshold: options.circuitBreakerOptions?.threshold || 5,
       timeout: options.circuitBreakerOptions?.timeout || 60000,
       resetTimeout: options.circuitBreakerOptions?.resetTimeout || 300000,
@@ -392,7 +392,7 @@ export abstract class BaseProvider extends EventEmitter implements ILLMProvider 
       },
       errors: this.errorCount,
       averageLatency: this.calculateAverageLatency(),
-      modelBreakdown: {}, // Would need to track per model
+      modelBreakdown: {} as Record<LLMModel, { requests: number; tokens: number; cost: number }>, // Would need to track per model
     };
   }
 
@@ -464,7 +464,9 @@ export abstract class BaseProvider extends EventEmitter implements ILLMProvider 
     // Clean up old metrics (keep last 1000)
     if (this.requestMetrics.size > 1000) {
       const oldestKey = this.requestMetrics.keys().next().value;
-      this.requestMetrics.delete(oldestKey);
+      if (oldestKey !== undefined) {
+        this.requestMetrics.delete(oldestKey);
+      }
     }
   }
 

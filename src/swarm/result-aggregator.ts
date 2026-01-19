@@ -440,14 +440,15 @@ export class SwarmResultAggregator extends EventEmitter {
     const reportId = generateId('report');
     const startTime = performance.now();
 
-    // Get context from memory
-    const contextData = await this.memoryManager.retrieve({
+    // Get context from memory using query (retrieve expects a string ID)
+    // Query by namespace and filter for swarm state entries which contain definitions
+    const contextData = await this.memoryManager.query({
       namespace: `swarm:${result.swarmId}`,
-      type: 'swarm-definition',
+      type: 'swarm-state',
     });
 
-    const context = contextData.length > 0 
-      ? JSON.parse(contextData[0].content) 
+    const context = contextData && contextData.length > 0
+      ? JSON.parse(contextData[0].content)
       : {};
 
     // Generate report sections

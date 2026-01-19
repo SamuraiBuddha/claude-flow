@@ -18,8 +18,8 @@ import {
 
 export class ConsensusEngine extends EventEmitter {
   private threshold: number;
-  private db: DatabaseManager;
-  private mcpWrapper: MCPToolWrapper;
+  private db!: DatabaseManager;
+  private mcpWrapper!: MCPToolWrapper;
   private activeProposals: Map<string, ConsensusProposal>;
   private votingStrategies: Map<string, VotingStrategy>;
   private metrics: ConsensusMetrics;
@@ -504,7 +504,8 @@ export class ConsensusEngine extends EventEmitter {
 
       try {
         // Calculate average voting time
-        const recentProposals = await this.db.getRecentConsensusProposals(10);
+        // getRecentConsensusProposals requires swarmId, use a general query
+        const recentProposals = await this.db.getRecentConsensusProposals('', 10);
 
         if (recentProposals.length > 0) {
           const votingTimes = recentProposals
@@ -539,20 +540,18 @@ export class ConsensusEngine extends EventEmitter {
   }
 
   /**
-   * Database helper methods (to be implemented in DatabaseManager)
+   * Database helper methods - these delegate to DatabaseManager methods
    */
-  private async getConsensusProposal(id: string): Promise<any> {
-    return this.db.prepare('SELECT * FROM consensus WHERE id = ?').get(id);
+  private async _getConsensusProposal(id: string): Promise<any> {
+    return this.db.getConsensusProposal(id);
   }
 
-  private async updateConsensusStatus(id: string, status: string): Promise<void> {
-    this.db
-      .prepare('UPDATE consensus SET status = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?')
-      .run(status, id);
+  private async _updateConsensusStatus(id: string, status: string): Promise<void> {
+    await this.db.updateConsensusStatus(id, status);
   }
 
-  private async getRecentConsensusProposals(limit: number): Promise<any[]> {
-    return this.db.prepare('SELECT * FROM consensus ORDER BY created_at DESC LIMIT ?').all(limit);
+  private async _getRecentConsensusProposals(swarmId: string, limit: number): Promise<any[]> {
+    return this.db.getRecentConsensusProposals(swarmId, limit);
   }
 
   /**

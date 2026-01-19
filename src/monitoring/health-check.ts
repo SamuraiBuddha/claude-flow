@@ -207,9 +207,10 @@ export class HealthCheckManager {
       }
 
       // Try to call health check method if available
-      if (typeof component.healthCheck === 'function') {
+      const componentWithHealthCheck = component as { healthCheck?: () => Promise<HealthCheckResult> };
+      if (typeof componentWithHealthCheck.healthCheck === 'function') {
         const result = await Promise.race([
-          component.healthCheck(),
+          componentWithHealthCheck.healthCheck(),
           new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Health check timeout')), this.config.timeout),
           ),
@@ -256,13 +257,19 @@ export class HealthCheckManager {
       let queuedTasks = 0;
       let completedTasks = 0;
 
-      if (agentManager && typeof agentManager.getMetrics === 'function') {
-        const agentMetrics = await agentManager.getMetrics();
+      interface ComponentWithMetrics {
+        getMetrics?: () => Promise<Record<string, number>>;
+      }
+
+      const agentManagerWithMetrics = agentManager as ComponentWithMetrics | null;
+      if (agentManagerWithMetrics && typeof agentManagerWithMetrics.getMetrics === 'function') {
+        const agentMetrics = await agentManagerWithMetrics.getMetrics();
         activeAgents = agentMetrics.activeAgents || 0;
       }
 
-      if (taskEngine && typeof taskEngine.getMetrics === 'function') {
-        const taskMetrics = await taskEngine.getMetrics();
+      const taskEngineWithMetrics = taskEngine as ComponentWithMetrics | null;
+      if (taskEngineWithMetrics && typeof taskEngineWithMetrics.getMetrics === 'function') {
+        const taskMetrics = await taskEngineWithMetrics.getMetrics();
         activeTasks = taskMetrics.activeTasks || 0;
         queuedTasks = taskMetrics.queuedTasks || 0;
         completedTasks = taskMetrics.completedTasks || 0;
@@ -433,14 +440,15 @@ export class HealthCheckManager {
    */
   private setupEventHandlers(): void {
     // Listen for component status changes
-    this.eventBus.on('component:status:updated', (status: ComponentStatus) => {
+    this.eventBus.on('component:status:updated', (data: unknown) => {
+      const status = data as ComponentStatus;
       if (status.status === 'unhealthy') {
         this.logger.warn(`Component ${status.component} became unhealthy: ${status.message}`);
       }
     });
 
     // Listen for system errors
-    this.eventBus.on('system:error', (error) => {
+    this.eventBus.on('system:error', (error: unknown) => {
       this.logger.error('System error detected:', error);
     });
   }

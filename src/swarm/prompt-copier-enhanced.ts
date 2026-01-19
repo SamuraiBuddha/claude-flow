@@ -22,7 +22,7 @@ export class EnhancedPromptCopier extends PromptCopier {
     super(options);
   }
 
-  public async copyFilesParallel(): Promise<void> {
+  protected override async copyFilesParallel(): Promise<void> {
     const workerCount = Math.min((this as any).options.maxWorkers, (this as any).fileQueue.length);
 
     // Initialize worker pool

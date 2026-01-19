@@ -7,6 +7,7 @@ import type { ILogger } from '../core/logger.js';
 import type { IEventBus } from '../core/event-bus.js';
 import type { SwarmEvent, EventType, AgentId, CommunicationStrategy } from '../swarm/types.js';
 import { generateId } from '../utils/helpers.js';
+import { hasAgentId } from '../utils/type-guards.js';
 
 export interface MessageBusConfig {
   strategy: CommunicationStrategy;

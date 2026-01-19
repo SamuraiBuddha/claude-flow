@@ -9,6 +9,7 @@ import { agenticHookManager } from './hook-manager.js';
 import type {
   AgenticHookContext,
   HookHandlerResult,
+  HookRegistration,
   PerformanceHookPayload,
   PerformanceMetric,
   BottleneckAnalysis,
@@ -820,8 +821,8 @@ function calculateTrend(values: number[]): number {
 // ===== Register Hooks =====
 
 export function registerPerformanceHooks(): void {
-  agenticHookManager.register(performanceMetricHook);
-  agenticHookManager.register(performanceBottleneckHook);
-  agenticHookManager.register(performanceOptimizationHook);
-  agenticHookManager.register(performanceThresholdHook);
+  agenticHookManager.register(performanceMetricHook as HookRegistration);
+  agenticHookManager.register(performanceBottleneckHook as HookRegistration);
+  agenticHookManager.register(performanceOptimizationHook as HookRegistration);
+  agenticHookManager.register(performanceThresholdHook as HookRegistration);
 }

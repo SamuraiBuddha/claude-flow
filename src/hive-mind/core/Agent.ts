@@ -15,6 +15,7 @@ import {
   AgentCapability,
   Task,
   Message,
+  MessageType,
   AgentConfig,
   ExecutionResult,
 } from '../types.js';
@@ -31,8 +32,8 @@ export class Agent extends EventEmitter {
   public currentTask: string | null = null;
   public messageCount: number = 0;
 
-  private db: DatabaseManager;
-  private mcpWrapper: MCPToolWrapper;
+  private db!: DatabaseManager;
+  private mcpWrapper!: MCPToolWrapper;
   private memory: Map<string, any>;
   private communicationBuffer: Message[];
   private lastHeartbeat: number;
@@ -256,7 +257,11 @@ export class Agent extends EventEmitter {
    */
   protected async performValidation(task: any): Promise<any> {
     // Validate execution results
-    const validation = {
+    const validation: {
+      phase: string;
+      checks: { name: string; passed: boolean }[];
+      passed: boolean;
+    } = {
       phase: 'validation',
       checks: [],
       passed: true,
@@ -290,7 +295,7 @@ export class Agent extends EventEmitter {
   /**
    * Send a message to another agent or broadcast
    */
-  async sendMessage(toAgentId: string | null, messageType: string, content: any): Promise<void> {
+  async sendMessage(toAgentId: string | null, messageType: MessageType, content: any): Promise<void> {
     const message: Message = {
       id: uuidv4(),
       fromAgentId: this.id,
@@ -609,8 +614,8 @@ export class Agent extends EventEmitter {
     if (patterns.suggestedCapabilities) {
       // Update capabilities based on learning
       const newCapabilities = patterns.suggestedCapabilities.filter(
-        (cap: string) => !this.capabilities.includes(cap),
-      );
+        (cap: string) => !this.capabilities.includes(cap as AgentCapability),
+      ) as AgentCapability[];
 
       if (newCapabilities.length > 0) {
         this.capabilities.push(...newCapabilities);

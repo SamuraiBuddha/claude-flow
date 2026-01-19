@@ -221,8 +221,9 @@ export class DiagnosticManager {
 
       // Get component metrics
       let componentMetrics: Record<string, any> = {};
-      if (typeof component.getMetrics === 'function') {
-        componentMetrics = await component.getMetrics();
+      const componentWithMetrics = component as { getMetrics?: () => Promise<Record<string, any>> };
+      if (typeof componentWithMetrics.getMetrics === 'function') {
+        componentMetrics = await componentWithMetrics.getMetrics();
       }
 
       // Get last error
@@ -662,7 +663,8 @@ RECOMMENDATIONS
 
   private setupEventHandlers(): void {
     // Track performance metrics
-    this.eventBus.on('performance:metric', (metric) => {
+    this.eventBus.on('performance:metric', (data: unknown) => {
+      const metric = data as { name: string; value: number };
       if (!this.performanceHistory.has(metric.name)) {
         this.performanceHistory.set(metric.name, []);
       }
@@ -677,7 +679,8 @@ RECOMMENDATIONS
     });
 
     // Track errors
-    this.eventBus.on('system:error', (error) => {
+    this.eventBus.on('system:error', (data: unknown) => {
+      const error = data as { component?: string; message?: string; error?: string; stack?: string };
       const component = error.component || 'system';
 
       if (!this.errorHistory.has(component)) {

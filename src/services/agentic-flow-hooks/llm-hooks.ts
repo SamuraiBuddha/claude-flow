@@ -9,6 +9,7 @@ import { agenticHookManager } from './hook-manager.js';
 import type {
   AgenticHookContext,
   HookHandlerResult,
+  HookRegistration,
   LLMHookPayload,
   LLMMetrics,
   Pattern,
@@ -109,7 +110,7 @@ export const postLLMCallHook = {
     payload: LLMHookPayload,
     context: AgenticHookContext
   ): Promise<HookHandlerResult> => {
-    const { provider, model, request, response, metrics } = payload;
+    const { provider, model, operation, request, response, metrics } = payload;
     
     if (!response || !metrics) {
       return { continue: true };
@@ -550,8 +551,8 @@ function adjustRequestForRetry(
 // ===== Register Hooks =====
 
 export function registerLLMHooks(): void {
-  agenticHookManager.register(preLLMCallHook);
-  agenticHookManager.register(postLLMCallHook);
-  agenticHookManager.register(llmErrorHook);
-  agenticHookManager.register(llmRetryHook);
+  agenticHookManager.register(preLLMCallHook as HookRegistration);
+  agenticHookManager.register(postLLMCallHook as HookRegistration);
+  agenticHookManager.register(llmErrorHook as HookRegistration);
+  agenticHookManager.register(llmRetryHook as HookRegistration);
 }

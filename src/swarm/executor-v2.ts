@@ -22,6 +22,15 @@ import {
   EventType,
   SWARM_CONSTANTS,
 } from './types.js';
+import {
+  TaskExecutor,
+  ExecutionConfig,
+  ExecutionResult,
+  ExecutionContext,
+  ClaudeExecutionOptions,
+  ClaudeCommand,
+  ResourceUsage,
+} from './executor.js';
 
 export interface ClaudeExecutionOptionsV2 extends ClaudeExecutionOptions {
   nonInteractive?: boolean;
@@ -29,6 +38,7 @@ export interface ClaudeExecutionOptionsV2 extends ClaudeExecutionOptions {
   promptDefaults?: Record<string, any>;
   environmentOverride?: Record<string, string>;
   retryOnInteractiveError?: boolean;
+  dangerouslySkipPermissions?: boolean;
 }
 
 export class TaskExecutorV2 extends TaskExecutor {
@@ -45,7 +55,7 @@ export class TaskExecutorV2 extends TaskExecutor {
     });
   }
 
-  async executeClaudeTask(
+  override async executeClaudeTask(
     task: TaskDefinition,
     agent: AgentState,
     claudeOptions: ClaudeExecutionOptionsV2 = {},
@@ -69,11 +79,11 @@ export class TaskExecutorV2 extends TaskExecutor {
         await this.createExecutionContext(task, agent),
         enhancedOptions,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       // Handle interactive errors with retry
       if (this.isInteractiveError(error) && enhancedOptions.retryOnInteractiveError) {
         this.logger.warn('Interactive error detected, retrying with non-interactive mode', {
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
         });
 
         // Force non-interactive mode and retry
@@ -107,7 +117,7 @@ export class TaskExecutorV2 extends TaskExecutor {
     const command = this.buildClaudeCommandV2(task, agent, options);
 
     // Create execution environment with enhancements
-    const env = {
+    const env: Record<string, string | undefined> = {
       ...process.env,
       ...context.environment,
       ...options.environmentOverride,
@@ -277,10 +287,10 @@ export class TaskExecutorV2 extends TaskExecutor {
             } else {
               resolve(result);
             }
-          } catch (collectionError) {
+          } catch (collectionError: unknown) {
             this.logger.error('Error collecting execution results', {
               sessionId,
-              error: collectionError.message,
+              error: collectionError instanceof Error ? collectionError.message : String(collectionError),
             });
 
             // Still resolve with basic result
@@ -296,11 +306,11 @@ export class TaskExecutorV2 extends TaskExecutor {
             });
           }
         });
-      } catch (spawnError) {
+      } catch (spawnError: unknown) {
         clearTimeout(timeoutHandle);
         this.logger.error('Failed to spawn process', {
           sessionId,
-          error: spawnError.message,
+          error: spawnError instanceof Error ? spawnError.message : String(spawnError),
         });
         reject(spawnError);
       }

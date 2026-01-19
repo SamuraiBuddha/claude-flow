@@ -51,20 +51,25 @@ export class Logger implements ILogger {
   }
 
   constructor(
-    config: LoggingConfig = {
+    configOrName: LoggingConfig | string = {
       level: 'info',
       format: 'json',
       destination: 'console',
     },
     context: Record<string, unknown> = {},
   ) {
+    // Handle string input for backwards compatibility
+    const config: LoggingConfig = typeof configOrName === 'string'
+      ? { name: configOrName, level: 'info', format: 'json', destination: 'console' }
+      : configOrName;
+
     // Validate file path if file destination
     if ((config.destination === 'file' || config.destination === 'both') && !config.filePath) {
       throw new Error('File path required for file logging');
     }
 
     this.config = config;
-    this.context = context;
+    this.context = config.name ? { ...context, logger: config.name } : context;
   }
 
   /**

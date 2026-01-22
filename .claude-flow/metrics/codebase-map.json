@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-01-20T16:53:47.634Z",
+  "timestamp": "2026-01-22T03:53:48.988Z",
   "projectRoot": "C:\\Users\\JordanEhrig\\Documents\\GitHub\\claude-flow",
   "structure": {
     "hasPackageJson": true,
@@ -7,5 +7,5 @@
     "hasClaudeConfig": true,
     "hasClaudeFlow": true
   },
-  "scannedAt": 1768928027635
+  "scannedAt": 1769054028988
 }
